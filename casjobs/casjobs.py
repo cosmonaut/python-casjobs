@@ -46,20 +46,126 @@ class CASJobs(ServiceProxy):
 
         # We can populate job_types here and have them ready for submit_extract_job
 
-    def get_jobs(self, jobid = None, status = None, includesys = False):
+    def get_jobs(self, jobid = "", timesubmit = "", timestart = "", timeend = "",
+                 status = "", queue = "", taskname = "", error = "", query = "",
+                 context = "", type = "", wsid = "", includesys = False):
         #test
         """
         Get a list of jobs matching the search parameters.
 
+        Optional arguments:
+
+            *jobid*: [ string ]
+            Unique identifier of job
+
+            *timesubmit*: [ datetime formatted string ]
+            When the job was submitted
+
+            *timestart*: [ datetime formatted string ]
+            When the job was started
+            
+            *timeend*: [ datetime formatted string ]
+            When the job completed/cancelled/failed
+            
+            *status*: [ string ]
+            A number representing job status:
+            0. ready
+            1. started
+            2. canceling
+            3. cancelled
+            4. failed
+            5. finished
+
+            *queue*: [ string ]
+            A number representing the queue.
+
+            *taskname*: [ string ]
+            The user submitted descriptor for the job.
+
+            *error*: [ string ]
+            Error message for this job, if any
+
+            *query*: [ string ]
+            The query submitted for this job
+
+            *context*: [ string ]
+            The context of this job (database name)
+
+            *type*: [ string ]
+            The type of this job. See get_job_types for a listing of possible values.
+
+            *wsid*: [ string ]
+            The WebServicesID of the owner of this job. If owner_wsid
+            does not have the 'admin' privilege, then this has no
+            effect.
+
+            The parameters are specifically formatted strings
+            describing which jobs should be retrieved.  The strings
+            are formatted as a '|' separated list of conditions.  Each
+            condition may have one of the following possible formats:
+            
+            VALUE (equality) 
+            VALUE, (equal or greater to VALUE)
+            ,VALUE (less than or equal to VALUE)
+            V1,V2 (between V1 and V2 (inclusive))
+            
+            String and DateTime values should not be quoted and may
+            not contain any special characters (:;,|).  DateTime
+            values can be any format that .net will parse, so long as
+            they do not contain any of the above special characters.
+            
+            The jobs returned are determined by the intersection of
+            the keys, given the union of their conditions
+            
+            Example 1:
+            jobid = "12345"
+            Jobs with a jobid equal to 12345.
+            
+            Example 2:
+            jobid = "123|321|132"
+            Jobs with a jobid equal to 123 or 321 or 132.
+            
+            Example 3:
+            jobid = "123|321", status = "5"
+            Jobs with a status of 5 and a jobid of 123 of 321.
+            
+            Example 4:
+            jobid = "123,|,122"
+            Returns jobs with id greater or equal to 123 or less than
+            or equal 122 (all of a users jobs).
+            
+            Example 5:
+            timeend = "2008-04-5,"
+            All jobs that ended after April 5, 2008.
+            
+            *includesys*: [ bool ]
+            Enable/disable returning system jobs (Default is False).
+
+        Returns:
+
+            A list of job objects?
         
         """
 
-        
+        kargs = locals().copy()
+        # do not want.
+        kargs.pop('includesys')
+        kargs.pop('self')
+
+        search = []
+
+        for arg in kargs:
+            if kargs[arg]:
+                search.append(":".join(( arg, str(kargs[arg]) )) )
+
+        payload = ";".join((search))
 
         jobres = self.GetJobs(owner_wsid = self._wsid,
                               owner_pw = self._pw,
-                              conditions = "taskname : lol;",
+                              conditions = payload,
                               includeSystem = includesys)
+
+        
 
         # Make jobres into job type
 

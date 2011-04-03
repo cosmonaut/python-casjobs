@@ -1,2 +1,24 @@
-todo
-asdf
+## python-casjobs
+
+This is a python library that makes use of the casjobs SOAP API to
+provide an easy to use python interface to casjobs.
+
+## Installation
+
+Dependencies:
+python >= 2.4
+ZSI - http://pywebsvcs.sourceforge.net/
+
+Installation is simple and accomplished by the command:
+
+python setup.py install
+
+Alternatively for installing in a different location one can use:
+
+python setup.py --root="/some/directory" install
+
+
+## Usage
+
+API documentation and examples are located at
+http://casa.colorado.edu/~nell/site/software/python-casjobs.html

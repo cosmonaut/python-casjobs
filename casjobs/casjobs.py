@@ -6,9 +6,7 @@ Author: Nico Nell (nicholas.nell@colorado.edu)
 
 
 from ZSI.ServiceProxy import ServiceProxy
-
-# only for debugging
-import sys
+import sys, os
 
 
 class CASJobsClient(ServiceProxy):
@@ -30,22 +28,39 @@ class CASJobsClient(ServiceProxy):
         A url pointing to the casjobs WSDL file (Default
         http://cas.sdss.org/CasJobs/services/jobs.asmx?WSDL)
 
+        *debug*: [ bool ]
+        Print raw ServiceProxy output to stdout if True (Default is
+        False).
     """
 
     def __init__(self,
                  wsid,
                  pw,
-                 url = "http://cas.sdss.org/CasJobs/services/jobs.asmx?WSDL"):
+                 url = "http://cas.sdss.org/CasJobs/services/jobs.asmx?WSDL",
+                 debug = False):
 
-        #ServiceProxy.__init__(self, url, force = True)
-        # Use this line with (import sys) for debugging
-        ServiceProxy.__init__(self, url, tracefile=sys.stdout, force = True)
+        if debug:
+            ServiceProxy.__init__(self, url, tracefile=sys.stdout, force = True)
+        else:
+            ServiceProxy.__init__(self, url, force = True)
 
         # casjobs wsid and password for all methods
         self._wsid = wsid
         self._pw = pw
 
-        # We can populate job_types here and have them ready for submit_extract_job
+        self.types = self._get_job_types()
+
+    def _get_job_types(self):
+        """
+        Get job types
+
+        This information can be accessed in self.types.
+        """
+        types = self.GetJobTypes(wsid = self._wsid, pw = self._pw)
+
+        types = types['GetJobTypesResult']['CJType']
+            
+        return types
 
     def get_jobs(self, jobid = "", timesubmit = "", timestart = "", timeend = "",
                  status = "", queue = "", taskname = "", error = "", query = "",
@@ -211,11 +226,6 @@ class CASJobsClient(ServiceProxy):
         
         return jobstatus[status_key['GetJobStatusResult']]
 
-    def get_job_types(self):
-        # Is this useful?
-        # If so wrap output in a dict or object...
-        types = self.GetJobTypes(wsid = self._wsid, pw = self._pw)
-        return types
 
     def cancel_job(self, jobid):
         """

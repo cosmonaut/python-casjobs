@@ -11,7 +11,7 @@ from ZSI.ServiceProxy import ServiceProxy
 import sys
 
 
-class CASJobs(ServiceProxy):
+class CASJobsClient(ServiceProxy):
     """
     The casjobs client.
 
@@ -304,10 +304,9 @@ class CASJobs(ServiceProxy):
                                       type = output_type)
         
         
-        return jobid
+        return jobid['SubmitExtractJobResult']
 
     def submit_job(self, qry = "", db = "MyDB", taskname = "pyjob", estimate = 1):
-        #test me
         """
         Submit a query job.
 
@@ -334,15 +333,14 @@ class CASJobs(ServiceProxy):
         """
 
         jobid = self.SubmitJob(wsid = self._wsid,
-                               pw = seld._pw,
+                               pw = self._pw,
                                qry = qry,
                                context = db,
                                taskname = taskname,
                                estimate = estimate)
 
                 
-        return jobid
-
+        return jobid['SubmitJobResult']
 
     def get_queues(self):
         """
@@ -367,10 +365,60 @@ class CASJobs(ServiceProxy):
         
         return qlist
 
-    def get_output(self):
-        # Download from an output url returned by get_jobs
-        return
+    def get_output(self, jobid, path = "", name = ""):
+        """
+        Download the output created by a submit_extract_job()
+        call. The file will be saved in the current working directory
+        unless *path* is specified.
 
+        Required arguments:
+
+            *jobid*: [ string ]
+            The ID of the submit_extract_job that created output.
+
+        Optional arguments:
+
+            *path*: [ string ]
+            Path where the output file should be saved (Default is
+            current working directory).
+
+            *name*: [ string ]
+            If this parameter is given then the downloaded file will
+            be given this filename instead of the default casjobs
+            name.
+
+        """
+        # Download from an output url returned by get_jobs
+
+        job = self.get_job(jobid = jobid)
+        if job.output_loc:
+            casfile = urllib2.urlopen(job.output_loc)
+
+        if name:
+            fname = name
+        else:
+            fname = job.output_loc.split("/")[-1]
+
+        if path:
+            if os.path.isdir(path):
+                if path[-1] != os.path.sep:
+                    path = path + os.path.sep
+                f = open(path + fname, 'w')
+            else:
+                print("WARNING: bad path given, file being saved to current working directory")
+                f = open(fname, 'w')
+
+        else:
+            f = open(fname, 'w')
+            
+        try:
+            f.write(casfile.read())
+        except:
+            casfile.close()
+            f.close()
+            print("WARNGING: failed to write output file")
+
+        return fname
 
     def upload_data(self, tablename, data, exists = False, ):
         #test

@@ -10,6 +10,7 @@ from ZSI.ServiceProxy import ServiceProxy
 # only for debugging
 import sys
 
+
 class CASJobs(ServiceProxy):
     """
     The casjobs client.
@@ -49,7 +50,6 @@ class CASJobs(ServiceProxy):
     def get_jobs(self, jobid = "", timesubmit = "", timestart = "", timeend = "",
                  status = "", queue = "", taskname = "", error = "", query = "",
                  context = "", type = "", wsid = "", includesys = False):
-        #test
         """
         Get a list of jobs matching the search parameters.
 
@@ -69,6 +69,7 @@ class CASJobs(ServiceProxy):
             
             *status*: [ string ]
             A number representing job status:
+            
             0. ready
             1. started
             2. canceling
@@ -104,10 +105,10 @@ class CASJobs(ServiceProxy):
             are formatted as a '|' separated list of conditions.  Each
             condition may have one of the following possible formats:
             
-            VALUE (equality) 
-            VALUE, (equal or greater to VALUE)
-            ,VALUE (less than or equal to VALUE)
-            V1,V2 (between V1 and V2 (inclusive))
+            - VALUE (equality) 
+            - VALUE, (equal or greater to VALUE)
+            - ,VALUE (less than or equal to VALUE)
+            - V1,V2 (between V1 and V2 (inclusive))
             
             String and DateTime values should not be quoted and may
             not contain any special characters (:;,|).  DateTime
@@ -252,7 +253,8 @@ class CASJobs(ServiceProxy):
             A name identifying the job (Default is "pyquickjob").
 
             *savefile*: [ string ]
-            Name of a file to save CSV output to. (Default is None).
+            Name of a file to save CSV output to (extension will be
+            .csv by default). (Default is None).
 
             *issystem*: [ bool ]
             Show or hide system jobs (Default is False).
@@ -272,7 +274,7 @@ class CASJobs(ServiceProxy):
                                         qry = qry,
                                         context = db,
                                         taskname = taskname,
-                                        isSystem = isSystem)
+                                        isSystem = issystem)
 
         # Make the giant string into a list of results
         qryres = quickres['ExecuteQuickJobResult'].split("\n")
@@ -288,7 +290,6 @@ class CASJobs(ServiceProxy):
                 print("WARNING: save file failed to write!")
         
         return qryres
-
 
     def submit_extract_job(self, tablename, output_type):
         #test this function

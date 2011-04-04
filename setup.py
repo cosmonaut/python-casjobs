@@ -9,4 +9,5 @@ setup(name='python-casjobs',
       author_email='nicholas.nell@colorado.edu',
       url='http://casa.colorado.edu/~nell/site/software/python-casjobs.html',
       packages=['casjobs'],
+      license="MIT",
      )

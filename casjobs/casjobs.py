@@ -6,7 +6,7 @@ Author: Nico Nell (nicholas.nell@colorado.edu)
 
 
 from ZSI.ServiceProxy import ServiceProxy
-import sys, os
+import sys, os, urllib2
 
 
 class CASJobsClient(ServiceProxy):
@@ -159,7 +159,7 @@ class CASJobsClient(ServiceProxy):
 
         Returns:
 
-            A list of job objects?
+            A list of job dicts
         
         """
 
@@ -181,13 +181,9 @@ class CASJobsClient(ServiceProxy):
                               conditions = payload,
                               includeSystem = includesys)
 
-        
+        # Return array of job dicts
 
-        # Make jobres into job type
-
-        # Return array of job objects
-
-        return jobres
+        return jobres['GetJobsResult']['CJJob']
 
     def get_job_status(self, jobid):
         """
@@ -400,9 +396,13 @@ class CASJobsClient(ServiceProxy):
         """
         # Download from an output url returned by get_jobs
 
-        job = self.get_job(jobid = jobid)
-        if job.output_loc:
-            casfile = urllib2.urlopen(job.output_loc)
+        job = self.get_jobs(jobid = jobid)[0]
+
+        if 'OutputLoc' in job.keys():
+            casfile = urllib2.urlopen(job['OutputLoc'])
+        else:
+            print("ERROR: No output file was found for jobid %s" % (job['JobId']))
+            return
 
         if name:
             fname = name

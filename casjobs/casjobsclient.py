@@ -7,7 +7,7 @@ Author: Nico Nell (nicholas.nell@colorado.edu)
 
 from ZSI.ServiceProxy import ServiceProxy
 import sys, os, urllib2
-
+import traceback
 
 class CASJobsClient(ServiceProxy):
     """
@@ -49,6 +49,14 @@ class CASJobsClient(ServiceProxy):
         self._pw = pw
 
         self.types = self._get_job_types()
+
+        self.jobstatus = {0 : "ready",
+                          1 : "started",
+                          2 : "canceling",
+                          3 : "cancelled",
+                          4 : "failed",
+                          5 : "finished"}
+
 
     def _get_job_types(self):
         """
@@ -159,7 +167,8 @@ class CASJobsClient(ServiceProxy):
 
         Returns:
 
-            A list of job dicts
+            A list of job dicts. This list is empty if no jobs match
+            the search.
         
         """
 
@@ -176,14 +185,20 @@ class CASJobsClient(ServiceProxy):
 
         payload = ";".join((search))
 
-        jobres = self.GetJobs(owner_wsid = self._wsid,
-                              owner_pw = self._pw,
-                              conditions = payload,
-                              includeSystem = includesys)
+        try:
+            jobres = self.GetJobs(owner_wsid = self._wsid,
+                                  owner_pw = self._pw,
+                                  conditions = payload,
+                                  includeSystem = includesys)
+        except Exception:
+            traceback.print_exc()
+            raise Exception("CASJobs SOAP Error")
 
         # Return array of job dicts
-
-        return jobres['GetJobsResult']['CJJob']
+        if 'CJJob' in jobres['GetJobsResult'].keys():
+            return jobres['GetJobsResult']['CJJob']
+        else:
+            return []
 
     def get_job_status(self, jobid):
         """
@@ -207,23 +222,28 @@ class CASJobsClient(ServiceProxy):
 
         """
 
-        jobstatus = {0 : "ready",
-                     1 : "started",
-                     2 : "canceling",
-                     3 : "cancelled",
-                     4 : "failed",
-                     5 : "finished"}
+        # TODO: SOAP fails hard if the jobid doesn't exist. Check
+        # get_jobs for a job first and then run GetJobStatus if this
+        # works.
 
-        # Note inconsistency in WSDL camelcase...
-        status_key = self.GetJobStatus(wsId = self._wsid,
-                                       pw = self._pw,
-                                       jobId = jobid)
+        if len(self.get_jobs(jobid = jobid)) == 1:
 
-        
-        return jobstatus[status_key['GetJobStatusResult']]
+            # Note inconsistency in WSDL camelcase...
+            try:
+                status_key = self.GetJobStatus(wsId = self._wsid,
+                                               pw = self._pw,
+                                               jobId = jobid)
+            except Exception:
+                traceback.print_exc()
+                raise Exception("CASJobs SOAP Error")
+
+            return self.jobstatus[status_key['GetJobStatusResult']]
+        else:
+            return("No jobs found for jobid %s" % str(jobid))
 
 
     def cancel_job(self, jobid):
+        #test
         """
         Cancel a job.
 
@@ -361,7 +381,7 @@ class CASJobsClient(ServiceProxy):
             A list of dicts containing the queue db and timeout
         
         """
-
+        # make this an attribute of the client.. there's no need to get this over and over
         qs = self.GetQueues(wsid = self._wsid,
                             pw = self._pw)
 
@@ -431,7 +451,6 @@ class CASJobsClient(ServiceProxy):
         return fname
 
     def upload_data(self, tablename, data, exists = False, ):
-        #test
         """
         Upload ASCII encoded CSV data into a table in MyDB.
 
@@ -457,10 +476,19 @@ class CASJobsClient(ServiceProxy):
         """
 
         if type(data) == str:
-            #open file
+            f = open(data, 'r')
+            datastr = f.read()
+            f.close()
             pass
-
-        # load file into datastr
+        elif type(data) == file:
+            try:
+                datastr = data.read()
+            except:
+                print("WARNING: Could not read file, upload canceled")
+                return
+        else:
+            print("WARNING: incorrect input format for 'data', upload canceled")
+            return
 
         self.UploadData(wsid = self._wsid,
                         pw = self._pw,

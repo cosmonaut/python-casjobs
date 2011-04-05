@@ -326,12 +326,16 @@ class CASJobsClient(ServiceProxy):
 
         #qry = "SELECT top 10 objid, flags FROM PhotoTag"
 
-        quickres = self.ExecuteQuickJob(wsid = self._wsid,
-                                        pw = self._pw,
-                                        qry = qry,
-                                        context = db,
-                                        taskname = taskname,
-                                        isSystem = issystem)
+        try:
+            quickres = self.ExecuteQuickJob(wsid = self._wsid,
+                                            pw = self._pw,
+                                            qry = qry,
+                                            context = db,
+                                            taskname = taskname,
+                                            isSystem = issystem)
+        except Exception:
+            traceback.print_exc()
+            raise Exception("CASJobs SOAP Error")
 
         # Make the giant string into a list of results
         qryres = quickres['ExecuteQuickJobResult'].split("\n")
@@ -355,11 +359,14 @@ class CASJobsClient(ServiceProxy):
         
         """
 
-        jobid = self.SubmitExtractJob(wsid = self._wsid,
-                                      pw = self._pw,
-                                      tableName = tablename,
-                                      type = output_type)
-        
+        try:
+            jobid = self.SubmitExtractJob(wsid = self._wsid,
+                                          pw = self._pw,
+                                          tableName = tablename,
+                                          type = output_type)
+        except Exception:
+            traceback.print_exc()
+            raise Exception("CASJobs SOAP Error")
         
         return jobid['SubmitExtractJobResult']
 
@@ -390,16 +397,72 @@ class CASJobsClient(ServiceProxy):
             client.
         """
 
-        jobid = self.SubmitJob(wsid = self._wsid,
-                               pw = self._pw,
-                               qry = qry,
-                               context = db,
-                               taskname = taskname,
-                               estimate = estimate)
-
-                
+        try:
+            jobid = self.SubmitJob(wsid = self._wsid,
+                                   pw = self._pw,
+                                   qry = qry,
+                                   context = db,
+                                   taskname = taskname,
+                                   estimate = estimate)
+        except Exception:
+            traceback.print_exc()
+            raise Exception("CASJobs SOAP Error")
+        
         return jobid['SubmitJobResult']
 
+    def upload_data(self, tablename, data, exists = False, ):
+        """
+        Upload ASCII encoded CSV data into a table in MyDB.
+
+        Required arguments:
+
+            *tablename*: [ string ]
+            The name of the table into which data will be loaded
+
+            *data*: [ file object or file name? (file object or string) ]
+            File containing the ASCII encoded CSV data to upload
+
+        Optional arguments:
+
+            *exists*: [ bool ]:
+            If True, expects 'tablename' to exists and tries to load
+            data into said table using the schema to determine types.
+            If False, creates a new table and tries to guess an
+            appropriate schema. (Default is False)
+
+        Returns:
+
+            Nothing.
+        """
+
+        if type(data) == str:
+            f = open(data, 'r')
+            datastr = f.read()
+            f.close()
+            pass
+        elif type(data) == file:
+            try:
+                datastr = data.read()
+            except:
+                print("WARNING: Could not read file, upload canceled")
+                return
+        else:
+            print("WARNING: incorrect input format for 'data', upload canceled")
+            return
+
+        try:
+            self.UploadData(wsid = self._wsid,
+                            pw = self._pw,
+                            tableName = tablename,
+                            data = datastr,
+                            tableExists = exists)
+        except Exception:
+            traceback.print_exc()
+            raise Exception("CASJobs SOAP Error")
+        
+        return
+
+    # Non SOAP methods
     def get_output(self, jobid, path = "", name = ""):
         """
         Download the output created by a submit_extract_job()
@@ -458,51 +521,3 @@ class CASJobsClient(ServiceProxy):
             print("WARNGING: failed to write output file")
 
         return fname
-
-    def upload_data(self, tablename, data, exists = False, ):
-        """
-        Upload ASCII encoded CSV data into a table in MyDB.
-
-        Required arguments:
-
-            *tablename*: [ string ]
-            The name of the table into which data will be loaded
-
-            *data*: [ file object or file name? (file object or string) ]
-            File containing the ASCII encoded CSV data to upload
-
-        Optional arguments:
-
-            *exists*: [ bool ]:
-            If True, expects 'tablename' to exists and tries to load
-            data into said table using the schema to determine types.
-            If False, creates a new table and tries to guess an
-            appropriate schema. (Default is False)
-
-        Returns:
-
-            Nothing.
-        """
-
-        if type(data) == str:
-            f = open(data, 'r')
-            datastr = f.read()
-            f.close()
-            pass
-        elif type(data) == file:
-            try:
-                datastr = data.read()
-            except:
-                print("WARNING: Could not read file, upload canceled")
-                return
-        else:
-            print("WARNING: incorrect input format for 'data', upload canceled")
-            return
-
-        self.UploadData(wsid = self._wsid,
-                        pw = self._pw,
-                        tableName = tablename,
-                        data = datastr,
-                        tableExists = exists)
-        
-        return

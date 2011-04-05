@@ -49,6 +49,7 @@ class CASJobsClient(ServiceProxy):
         self._pw = pw
 
         self.types = self._get_job_types()
+        self.queues = self._get_queues()
 
         self.jobstatus = {0 : "ready",
                           1 : "started",
@@ -69,6 +70,36 @@ class CASJobsClient(ServiceProxy):
         types = types['GetJobTypesResult']['CJType']
             
         return types
+
+    def _get_queues(self):
+        """
+        Get the queues.
+
+        Required Arguments:
+
+            None
+
+        Returns:
+
+            A list of dicts containing the queue db and timeout
+        
+        """
+
+        try:
+            qs = self.GetQueues(wsid = self._wsid,
+                                pw = self._pw)
+        except Exception:
+            traceback.print_exc()
+            raise Exception("CASJobs SOAP Error")
+
+        qlist = []
+        if 'CJQueue' in qs['GetQueuesResult'].keys():
+            for q in qs['GetQueuesResult']['CJQueue']:
+                qlist.append({'db' : q['Context'], 'timeout' :q['Timeout']})
+        
+            return qlist
+        else:
+            return []
 
     def get_jobs(self, jobid = "", timesubmit = "", timestart = "", timeend = "",
                  status = "", queue = "", taskname = "", error = "", query = "",
@@ -222,10 +253,6 @@ class CASJobsClient(ServiceProxy):
 
         """
 
-        # TODO: SOAP fails hard if the jobid doesn't exist. Check
-        # get_jobs for a job first and then run GetJobStatus if this
-        # works.
-
         if len(self.get_jobs(jobid = jobid)) == 1:
 
             # Note inconsistency in WSDL camelcase...
@@ -257,7 +284,11 @@ class CASJobsClient(ServiceProxy):
             Nothing.
         """
 
-        self.CancelJob(wsId = self._wsid, pw = self._pw, jobId = jobid)
+        try:
+            self.CancelJob(wsId = self._wsid, pw = self._pw, jobId = jobid)
+        except Exception:
+            traceback.print_exc()
+            raise Exception("CASJobs SOAP Error")
         
         return
 
@@ -355,7 +386,8 @@ class CASJobsClient(ServiceProxy):
             Note that the query will be executed in the context mode
             nearest to the estimate given. The context modes are
             generally spaced in intervals of 500 minutes. These
-            context modes can be viewed using get_queues().
+            context modes can be viewed the queues property of the
+            client.
         """
 
         jobid = self.SubmitJob(wsid = self._wsid,
@@ -367,29 +399,6 @@ class CASJobsClient(ServiceProxy):
 
                 
         return jobid['SubmitJobResult']
-
-    def get_queues(self):
-        """
-        Get the queues.
-
-        Required Arguments:
-
-            None
-
-        Returns:
-
-            A list of dicts containing the queue db and timeout
-        
-        """
-        # make this an attribute of the client.. there's no need to get this over and over
-        qs = self.GetQueues(wsid = self._wsid,
-                            pw = self._pw)
-
-        qlist = []
-        for q in qs['GetQueuesResult']['CJQueue']:
-            qlist.append({'db' : q['Context'], 'timeout' :q['Timeout']})
-        
-        return qlist
 
     def get_output(self, jobid, path = "", name = ""):
         """

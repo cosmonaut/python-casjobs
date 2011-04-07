@@ -361,7 +361,6 @@ class CASJobsClient(ServiceProxy):
         return qryres
 
     def submit_extract_job(self, tablename, output_type):
-        #test this function
         """
         Submit a table extraction job.
         
@@ -444,10 +443,13 @@ class CASJobsClient(ServiceProxy):
         """
 
         if type(data) == str:
-            f = open(data, 'r')
-            datastr = f.read()
-            f.close()
-            pass
+            if os.path.isfile(data):
+                f = open(data, 'r')
+                datastr = f.read()
+                f.close()
+            else:
+                print("WARNING: input file: %s does not exist" % (data))
+                return
         elif type(data) == file:
             try:
                 datastr = data.read()

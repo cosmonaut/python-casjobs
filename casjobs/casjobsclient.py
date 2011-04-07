@@ -254,7 +254,6 @@ class CASJobsClient(ServiceProxy):
         """
 
         if len(self.get_jobs(jobid = jobid)) == 1:
-
             # Note inconsistency in WSDL camelcase...
             try:
                 status_key = self.GetJobStatus(wsId = self._wsid,
@@ -284,12 +283,21 @@ class CASJobsClient(ServiceProxy):
             Nothing.
         """
 
-        try:
-            self.CancelJob(wsId = self._wsid, pw = self._pw, jobId = jobid)
-        except Exception:
-            traceback.print_exc()
-            raise Exception("CASJobs SOAP Error")
-        
+        job = self.get_jobs(jobid = jobid)
+        if len(job) == 1:
+            print job[0]['Status']
+            if job[0]['Status'] > 2:
+                try:
+                    self.CancelJob(wsId = self._wsid, pw = self._pw, jobId = jobid)
+                except Exception:
+                    traceback.print_exc()
+                    raise Exception("CASJobs SOAP Error")
+            else:
+                print("WARNING: this job has status %s. Will not cancel" %
+                      (self.jobstatus[statusself.job[0]['Status']]))
+        else:
+            print("WARNING: no job exists with jobid: %s" % (str(jobid)))
+
         return
 
     def quick_job(self, qry = "", db = "MyDB", taskname = "pyquickjob", savefile = None, issystem = False):

@@ -8,6 +8,7 @@ Author: Nico Nell (nicholas.nell@colorado.edu)
 from ZSI.ServiceProxy import ServiceProxy
 import sys, os, urllib2
 import traceback
+import warnings
 
 class CASJobsClient(ServiceProxy):
     """
@@ -58,6 +59,8 @@ class CASJobsClient(ServiceProxy):
                           4 : "failed",
                           5 : "finished"}
 
+        # Show warnings
+        warnings.simplefilter('always')
 
     def _get_job_types(self):
         """
@@ -285,18 +288,18 @@ class CASJobsClient(ServiceProxy):
 
         job = self.get_jobs(jobid = jobid)
         if len(job) == 1:
-            print job[0]['Status']
-            if job[0]['Status'] > 2:
+            if job[0]['Status'] < 2:
+                
                 try:
                     self.CancelJob(wsId = self._wsid, pw = self._pw, jobId = jobid)
                 except Exception:
                     traceback.print_exc()
                     raise Exception("CASJobs SOAP Error")
             else:
-                print("WARNING: this job has status %s. Will not cancel" %
-                      (self.jobstatus[statusself.job[0]['Status']]))
+                warnings.warn("WARNING: this job has status %s. Will not cancel" %
+                              (self.jobstatus[job[0]['Status']]))
         else:
-            print("WARNING: no job exists with jobid: %s" % (str(jobid)))
+            warnings.warn("WARNING: no job exists with jobid: %s" % (str(jobid)))
 
         return
 
@@ -356,7 +359,7 @@ class CASJobsClient(ServiceProxy):
                     
             except:
                 f.close()
-                print("WARNING: save file failed to write!")
+                warnings.warn("WARNING: save file failed to write!")
         
         return qryres
 
@@ -448,16 +451,16 @@ class CASJobsClient(ServiceProxy):
                 datastr = f.read()
                 f.close()
             else:
-                print("WARNING: input file: %s does not exist" % (data))
+                warnings.warn("WARNING: input file: %s does not exist" % (data))
                 return
         elif type(data) == file:
             try:
                 datastr = data.read()
             except:
-                print("WARNING: Could not read file, upload canceled")
+                warnings.warn("WARNING: Could not read file, upload canceled")
                 return
         else:
-            print("WARNING: incorrect input format for 'data', upload canceled")
+            warnings.warn("WARNING: incorrect input format for 'data', upload canceled")
             return
 
         try:
@@ -503,7 +506,7 @@ class CASJobsClient(ServiceProxy):
         if 'OutputLoc' in job.keys():
             casfile = urllib2.urlopen(job['OutputLoc'])
         else:
-            print("ERROR: No output file was found for jobid %s" % (job['JobId']))
+            warnings.warn("ERROR: No output file was found for jobid %s" % (job['JobId']))
             return
 
         if name:
@@ -517,7 +520,7 @@ class CASJobsClient(ServiceProxy):
                     path = path + os.path.sep
                 f = open(path + fname, 'w')
             else:
-                print("WARNING: bad path given, file being saved to current working directory")
+                warnings.warn("WARNING: bad path given, file being saved to current working directory")
                 f = open(fname, 'w')
 
         else:
@@ -528,6 +531,6 @@ class CASJobsClient(ServiceProxy):
         except:
             casfile.close()
             f.close()
-            print("WARNGING: failed to write output file")
+            warnings.warn("WARNING: failed to write output file")
 
         return fname

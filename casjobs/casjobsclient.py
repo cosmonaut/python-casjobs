@@ -234,25 +234,32 @@ class CASJobsClient(ServiceProxy):
         else:
             return []
 
-    def get_job_status(self, jobid):
+    def get_job_status(self, jobid, code = False):
         """
         Get the current status of a job
 
         Required Arguments:
 
-            *jobid*: [int] 
+            *jobid*: [ int ] 
             The ID number of the job to cancel.
+
+        Optional Arguments:
+
+            *code*: [ bool ]
+            Return the status as an integer code instead of a string.
 
         Returns:
 
-            A string representing the job status:
+            A string representing the job status unless code is set to
+            True in which case it returns an integer representing the
+            job status:
 
-            - ready
-            - started
-            - canceling
-            - cancelled
-            - failed
-            - finished
+            0. ready
+            1. started
+            2. canceling
+            3. cancelled
+            4. failed
+            5. finished
 
         """
 
@@ -262,11 +269,15 @@ class CASJobsClient(ServiceProxy):
                 status_key = self.GetJobStatus(wsId = self._wsid,
                                                pw = self._pw,
                                                jobId = jobid)
+                status_key = status_key['GetJobStatusResult']
             except Exception:
                 traceback.print_exc()
                 raise Exception("CASJobs SOAP Error")
 
-            return self.jobstatus[status_key['GetJobStatusResult']]
+            if not code:
+                return self.jobstatus[status_key]
+            else:
+                return status_key
         else:
             return("No jobs found for jobid %s" % str(jobid))
 
@@ -429,7 +440,7 @@ class CASJobsClient(ServiceProxy):
             *tablename*: [ string ]
             The name of the table into which data will be loaded
 
-            *data*: [ file object or file name? (file object or string) ]
+            *data*: [ file object or string ]
             File containing the ASCII encoded CSV data to upload
 
         Optional arguments:

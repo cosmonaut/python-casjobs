@@ -150,7 +150,7 @@ class CASJobsClient(ServiceProxy):
             The context of this job (database name)
 
             *type*: [ string ]
-            The type of this job. See get_job_types for a listing of possible values.
+            The type of this job. See self.types for a listing of possible values.
 
             *wsid*: [ string ]
             The WebServicesID of the owner of this job. If owner_wsid
@@ -377,6 +377,24 @@ class CASJobsClient(ServiceProxy):
     def submit_extract_job(self, tablename, output_type):
         """
         Submit a table extraction job.
+
+        Required arguments:
+
+            *tablename*: [ string ]
+            The name of the table to extract.
+
+            *output_type*: [ string ]
+            The format used to store the output of the job:
+
+            - CSV (Comma Separated Values)
+            - DataSet (XML DataSet)
+            - FITS (FITS file)
+            - QUERY (Null)
+            - VOTable (XML - Virtual Observatory VOTABLE)
+
+        Returns:
+
+            [ integer ] An id for the submitted job.
         
         """
 
@@ -416,6 +434,10 @@ class CASJobsClient(ServiceProxy):
             generally spaced in intervals of 500 minutes. These
             context modes can be viewed the queues property of the
             client.
+            
+        Returns:
+
+            [ integer ] An id for the submitted job.
         """
 
         try:
@@ -508,6 +530,10 @@ class CASJobsClient(ServiceProxy):
             If this parameter is given then the downloaded file will
             be given this filename instead of the default casjobs
             name.
+
+        Returns:
+
+            [ string ] The name of the saved file.
 
         """
         # Download from an output url returned by get_jobs
